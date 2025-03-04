@@ -1,4 +1,4 @@
-
+toml
 [versions]
 kotlin = "2.1.0"
 compose-bom = "2023.03.00"
@@ -12,10 +12,8 @@ androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
 appcompat = "1.6.1"
 material = "1.11.0"
-android-gradle-plugin = "8.3.1"
 
 [libraries]
-androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
@@ -31,6 +29,6 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 [plugins]
-androidApplication = { id = "com.android.application", version.ref = "android-gradle-plugin" }
+androidApplication = { id = "com.android.application", version = "8.3.0" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
