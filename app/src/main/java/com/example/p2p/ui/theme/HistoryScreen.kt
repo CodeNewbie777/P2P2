@@ -1,5 +1,3 @@
-package com.example.p2p.ui.theme
-
 package com.example.p2papp
 
 import android.content.BroadcastReceiver
@@ -42,7 +40,7 @@ fun HistoryScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("File Transfer History", style = MaterialTheme.typography.h5)
+        Text("File Transfer History", style = MaterialTheme.typography.h5, color = MaterialTheme.colors.primary) // Updated
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(history) { entry -> Text(entry, style = MaterialTheme.typography.body1) }

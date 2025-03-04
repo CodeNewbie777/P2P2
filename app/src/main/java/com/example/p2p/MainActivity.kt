@@ -91,3 +91,4 @@ class MainActivity : ComponentActivity() {
         wifiManager.stop()
         super.onDestroy()
     }
+}

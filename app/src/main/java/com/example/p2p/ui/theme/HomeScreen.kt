@@ -1,5 +1,3 @@
-package com.example.p2p.ui.theme
-
 package com.example.p2papp
 
 import android.content.BroadcastReceiver

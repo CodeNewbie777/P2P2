@@ -1,16 +1,126 @@
-package com.example.p2papp.ui.theme
+package com.example.p2papp
 
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.darkColors
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.p2papp.wifi.WifiDirectManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
-fun P2PAppTheme(darkTheme: Boolean = true, content: @Composable () -> Unit) {
-    val colors = darkColors(
-        primary = Color(0xFF388E3C),    // Dark green for buttons, titles
-        secondary = Color(0xFF81C784),  // Light green for progress bars, accents
-        background = Color(0xFF212121)  // Dark gray background
-    )
-    MaterialTheme(colors = colors, content = content)
-}
+fun HomeScreen(navController: NavController, wifiManager: WifiDirectManager) {
+    val pttManager = remember { PTTManager(wifiManager) }
+    var isPTTActive by remember { mutableStateOf(false) }
+    val peers by remember { mutableStateOf(wifiManager.getPeers()) }
+    var statusMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var fileProgress by remember { mutableStateOf(0f) }
+    var showReconnectDialog by remember { mutableStateOf(false) }
+    var fileError by remember { mutableStateOf<String?>(null) }
+
+    val receiver = remember {
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                when (intent.action) {
+                    "FILE_PROGRESS" -> fileProgress = intent.getFloatExtra("progress", 0f)
+                    "FILE_ERROR" -> fileError = intent.getStringExtra("error")
+                    "CONNECTION_LOST" -> showReconnectDialog = true
+                    "PTT_AUDIO" -> pttManager.playAudio(intent.getStringExtra("audio")!!)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        context.registerReceiver(receiver, IntentFilter().apply {
+            addAction("FILE_PROGRESS")
+            addAction("FILE_ERROR")
+            addAction("CONNECTION_LOST")
+            addAction("PTT_AUDIO")
+        })
+        wifiManager.startDiscovery(
+            onSuccess = { statusMessage = "Discovery started" },
+            onFailure = { statusMessage = "Discovery failed: $it" }
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    LaunchedEffect(fileError) {
+        fileError?.let {
+            scope.launch { snackbarHostState.showSnackbar(it) }
+            fileProgress = 0f
+            fileError = null
+        }
+    }
+
+    LaunchedEffect(statusMessage) {
+        if (statusMessage.isNotEmpty()) {
+            scope.launch {
+                snackbarHostState.showSnackbar(statusMessage)
+                delay(2000)
+                statusMessage = ""
+            }
+        }
+    }
+
+    if (showReconnectDialog && peers.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { showReconnectDialog = false },
+            title = { Text("Connection Lost") },
+            text = { Text("Reconnect to ${peers.first().deviceName}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    wifiManager.attemptReconnect(peers.first())
+                    showReconnectDialog = false
+                }) { Text("Yes") }
+            },
+            dismissButton = { TextButton(onClick = { showReconnectDialog = false }) { Text("No") } }
+        )
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Connected Peers", style = MaterialTheme.typography.h6, color = MaterialTheme.colors.primary)
+            Card(modifier = Modifier.fillMaxWidth().height(120.dp), elevation = 4.dp) {
+                LazyColumn(modifier = Modifier.padding(8.dp)) {
+                    items(peers) { peer ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(peer.deviceName, style = MaterialTheme.typography.body1)
+                            Text(peer.deviceAddress, style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)) // Updated
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { navController.navigate("chat") }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+                Icon(Icons.Default.Chat, contentDescription = "Chat", modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Open Chat")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { navController.navigate("video") }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+                Icon(Icons.Default.Videocam, contentDescription = "Video", modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Start Video")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { (context as MainActivity).launchFilePicker

@@ -1,5 +1,3 @@
-package com.example.p2p.ui.theme
-
 package com.example.p2papp
 
 import android.content.BroadcastReceiver
@@ -51,7 +49,7 @@ fun ChatScreen(wifiManager: WifiDirectManager) {
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Text(if (isGroupChat) "Group Chat" else "Direct Message", style = MaterialTheme.typography.h5)
+            Text(if (isGroupChat) "Group Chat" else "Direct Message", style = MaterialTheme.typography.h5, color = MaterialTheme.colors.primary) // Updated
             Switch(checked = isGroupChat, onCheckedChange = { isGroupChat = it })
             if (!isGroupChat && peers.isNotEmpty()) {
                 DropdownMenu(expanded = true, onDismissRequest = {}) {
